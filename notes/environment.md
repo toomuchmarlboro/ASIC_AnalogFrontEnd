@@ -154,3 +154,16 @@ The sky130 functional cell models used by the gate-level check are in the PDK:
 PDK `0fe599b2afb6708d281543108caf8310912f54af`, compiled with `-DFUNCTIONAL
 -DUNIT_DELAY=`. KLayout, Magic and Netgen remain inside the OpenLane
 `nix-shell`. ModelSim is still laptop-only.
+
+### Figure tools — added 2026-09-19
+
+| Tool | Version | Where |
+| --- | --- | --- |
+| Python venv | system `python3`, venv at `~/tools/wave-venv` | `python3 -m venv ~/tools/wave-venv && ~/tools/wave-venv/bin/pip install matplotlib` |
+| matplotlib | 3.11.2 | in that venv |
+| Pillow | 12.3.0 | in that venv, pulled in by matplotlib, writes the JPEGs |
+| Node.js | system `/usr/bin/node` | only for the palette validator |
+
+A separate venv so the shared conda base environment is not modified. Used by
+`tb/wave2jpeg.py`, `tb/plots.py` and `tb/make_waveforms.sh`; see
+[waveforms.md](waveforms.md).

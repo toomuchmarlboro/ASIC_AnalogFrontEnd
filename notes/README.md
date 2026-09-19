@@ -9,6 +9,7 @@
 | [fifo.md](fifo.md) | The CDC FIFO: megafunction as read, depth chosen by measurement, verification |
 | [clocking.md](clocking.md) | PLL removal, external 24.576 MHz clock, three domains, reset |
 | [ports.md](ports.md) | Tristate split, three `inout`s, top-level port changes |
+| [waveforms.md](waveforms.md) | Every figure in `figures/`, what it shows, how to regenerate it |
 | [decisions.md](decisions.md) | Non-obvious choices, with alternatives and cost |
 | [results.md](results.md) | Numbers, each traceable to the command that produced it |
 | [tdm8_rx.md](tdm8_rx.md) | `tdm8_rx` conversion record — folds into `conversion.md` at Phase 2 |

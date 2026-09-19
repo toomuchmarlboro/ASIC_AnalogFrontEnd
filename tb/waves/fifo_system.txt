@@ -1,0 +1,17 @@
+# packet_formatter -> async_fifo -> udp_tx_core. See notes/waveforms.md.
+-- audio domain: packet_formatter writes
+tb_fifo_system.tdm_valid     tdm16_valid
+tb_fifo_system.fifo_wr_en    fifo_wr_en
+tb_fifo_system.fifo_wr_data  fifo_wr_data
+tb_fifo_system.packet_ready  packet_ready
+tb_fifo_system.wrfull        wrfull
+-- occupancy (scoreboard, bytes)
+tb_fifo_system.occ           occupancy     analog
+-- RMII domain: udp_tx_core reads
+tb_fifo_system.tx_start      tx_start
+tb_fifo_system.granted       line_granted
+tb_fifo_system.tx_ready      tx_ready
+tb_fifo_system.fifo_rd_en    fifo_rd_en
+tb_fifo_system.rdempty       rdempty
+tb_fifo_system.tx_data       tx_data
+tb_fifo_system.pkts          packets_sent  udec

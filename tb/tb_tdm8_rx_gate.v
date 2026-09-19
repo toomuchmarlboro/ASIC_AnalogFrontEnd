@@ -50,6 +50,19 @@ module tb_tdm8_rx_gate;
         test_frame[7] = 24'h181818;
     end
 
+    // Waveform dump for reports, off by default: +vcd=<file.vcd>. See notes/waveforms.md.
+    // +vcd_until=<n>: stop dumping after n time units of this file's timescale.
+    reg [1023:0] vcd_file;
+    reg [63:0]   vcd_until;
+    initial if ($value$plusargs("vcd_until=%d", vcd_until)) begin
+        #(vcd_until) $dumpoff;
+    end
+    initial if ($value$plusargs("vcd=%s", vcd_file)) begin
+        $dumpfile(vcd_file);
+        $dumpvars(1, tb_tdm8_rx_gate);
+        $dumpvars(1, u_rtl);
+    end
+
     // ---- comparison -------------------------------------------------------
 
     reg     armed = 1'b0;      // set at the first reset release

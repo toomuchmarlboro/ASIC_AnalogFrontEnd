@@ -118,19 +118,35 @@ known-good reference configuration, 96 kHz packets); or measure first.
 
 **Status.** Made before the area was known. Measured afterwards: 3.99 mm² and
 625 612 cells for the decimator alone, roughly ten times the rest of the
-design, see [phase1.md](phase1.md). **Re-confirm before Phase 2 starts on it.**
-Phase 1 work does not depend on the answer; the FIFO depth was chosen to cover
-both rates.
+design. **Re-confirmed by the owner the same day, after seeing that figure**
+("go do both"). A place-and-route feasibility run followed, see
+[phase1.md](phase1.md). Full-effort synthesis is 5.43 mm²; the die is about
+15.6 mm².
 
-## 2026-09-19 — Top-level defaults proposed, awaiting owner confirmation
+## 2026-09-19 — `SYNTH_STRATEGY "AREA 3"` for the decimator
 
-Not decisions yet. Each is the default that would be used at Phase 3 unless
-told otherwise; reasons in [clocking.md](clocking.md) and [ports.md](ports.md).
+**Decision.** Synthesise the decimator with OpenLane's `AREA 3` script.
 
-- Keep `clk_50m_board` as a third clock input rather than fold it into
-  `rmii_ref_clk`. The config's `CLOCK_PORT` then has three entries.
-- Replace `pll_locked` with an external active-low `rst_n`, keeping the
-  packet's status bits and so the wire format.
-- Split `eth_mdio` into `_i`, `_o` = 0, `_oe` = 0 like the I2C pins.
-- Remove the `c3` phase-shifted clock and the LRCLK re-timing path, dead while
-  `C_LRCLK_RETIME` is false.
+**Alternatives.** The default `AREA 0`, which was stopped after 30 minutes in
+ABC on a 252 000-gate netlist, unfinished.
+
+**Reason.** `AREA 3` finished in 7 minutes. It is the only strategy measured to
+finish on this block. Whether the full chip keeps `AREA 0` for everything else
+is a Phase 4 question.
+
+## 2026-09-19 — Top-level defaults proposed, three applied on "proceed PLL"
+
+Proposed first, with reasons in [clocking.md](clocking.md) and
+[ports.md](ports.md). The owner then said "proceed PLL", and the first, second
+and fourth were applied in `patches/0001-top-system-remove-pll.patch`, and the
+third in `patches/0002-top-system-split-tristates.patch`. They can still be
+reversed.
+
+- **Applied.** Keep `clk_50m_board` as a third clock input rather than fold it
+  into `rmii_ref_clk`. The config's `CLOCK_PORT` then has three entries.
+- **Applied.** Replace `pll_locked` with an external active-low `rst_n`, keeping
+  the packet's status bits and so the wire format.
+- **Applied** in patch 0002 on "go do both". Split `eth_mdio` into `_i`,
+  `_o` = 0, `_oe` = 0 like the I2C pins.
+- **Applied.** Remove the `c3` phase-shifted clock and the LRCLK re-timing
+  path, dead while `C_LRCLK_RETIME` is false.

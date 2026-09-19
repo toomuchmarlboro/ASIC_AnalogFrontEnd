@@ -103,6 +103,20 @@ module tb_fifo_system;
         end
     end
 
+    // Waveform dump for reports, off by default: +vcd=<file.vcd>. See notes/waveforms.md.
+    // +vcd_until=<n>: stop dumping after n time units of this file's timescale.
+    reg [1023:0] vcd_file;
+    reg [63:0]   vcd_until;
+    initial if ($value$plusargs("vcd_until=%d", vcd_until)) begin
+        #(vcd_until) $dumpoff;
+    end
+    initial if ($value$plusargs("vcd=%s", vcd_file)) begin
+        $dumpfile(vcd_file);
+        $dumpvars(1, tb_fifo_system);
+        $dumpvars(1, u_fifo);
+        $dumpvars(1, u_udp);
+    end
+
     // ---- scoreboard -------------------------------------------------------
 
     reg [7:0] sb [0:262143];

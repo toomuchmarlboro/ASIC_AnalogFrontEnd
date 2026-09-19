@@ -1,0 +1,24 @@
+$ version 1.1
+# GHDL wave filter for tb_top_port: only these signals go in the VCD.
+/tb_top_port/clk24
+/tb_top_port/rst_n
+/tb_top_port/r_bclk
+/tb_top_port/d_bclk
+/tb_top_port/r_lrclk
+/tb_top_port/d_lrclk
+/tb_top_port/r_buf
+/tb_top_port/d_buf
+/tb_top_port/r_adc_rst
+/tb_top_port/d_adc_rst
+/tb_top_port/r_scl
+/tb_top_port/r_sda
+/tb_top_port/d_scl
+/tb_top_port/d_sda
+/tb_top_port/d_scl_oe
+/tb_top_port/d_sda_oe
+/tb_top_port/d_scl_i
+/tb_top_port/d_sda_i
+/tb_top_port/r_tx_en
+/tb_top_port/d_tx_en
+/tb_top_port/r_txd
+/tb_top_port/d_txd

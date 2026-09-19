@@ -39,6 +39,19 @@ module tb_async_fifo;
     always begin #(WPER/2) wrclk = ~wrclk; end
     always begin #(RPER/2) rdclk = ~rdclk; end
 
+    // Waveform dump for reports, off by default: +vcd=<file.vcd>. See notes/waveforms.md.
+    // +vcd_until=<n>: stop dumping after n time units of this file's timescale.
+    reg [1023:0] vcd_file;
+    reg [63:0]   vcd_until;
+    initial if ($value$plusargs("vcd_until=%d", vcd_until)) begin
+        #(vcd_until) $dumpoff;
+    end
+    initial if ($value$plusargs("vcd=%s", vcd_file)) begin
+        $dumpfile(vcd_file);
+        $dumpvars(1, tb_async_fifo);
+        $dumpvars(1, dut);
+    end
+
     // ---- scoreboard -------------------------------------------------------
 
     reg [7:0] sb [0:65535];

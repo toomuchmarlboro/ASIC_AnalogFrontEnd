@@ -1,7 +1,7 @@
 # Phase 1 — remove the vendor IP
 
-Status: **1b done and verified; 1a and 1c specified, code waits for Phase 3;
-one finding threatens the schedule.** Date: 2026-09-19.
+Status: **1a, 1b and 1c done and verified. The decimator is kept; its
+place-and-route feasibility run is in progress.** Date: 2026-09-19.
 
 Source read: `UATR_TDM` cloned to `~/UATR_TDM`, HEAD
 `c1fc108c68fad7cef11b884a3e889c5dd4281cc6`, byte-identical to `legacy/rtl` and
@@ -9,9 +9,9 @@ Source read: `UATR_TDM` cloned to `~/UATR_TDM`, HEAD
 
 | Item | State | Record |
 | --- | --- | --- |
-| 1a PLL removal | specified, no code (top level is Phase 3) | [clocking.md](clocking.md) |
+| 1a PLL removal | **done as a patch, verified**: `patches/0001-top-system-remove-pll.patch`, equivalent to the PLL original over 12 and 20 ms | [clocking.md](clocking.md) |
 | 1b async FIFO | **built, verified**: `src/async_fifo.v`, 512 x 8 | [fifo.md](fifo.md) |
-| 1c tristate split | specified, no code (top level is Phase 3) | [ports.md](ports.md) |
+| 1c tristate split | **done as a patch, verified**: `patches/0002-top-system-split-tristates.patch`, three `inout`s to nine ports, equivalent over 12 and 20 ms with a live I2C bus | [ports.md](ports.md) |
 
 The Phase 1 gate, `grep -rniE 'altera|altpll|lpm_|scfifo' src/`, returns
 nothing today. It is trivially true until the top level exists.
@@ -62,7 +62,29 @@ has not been tried on this server and is the schedule risk. The arrays are
 inferred RAM on the FPGA. The ASIC has no third-party SRAM macro to use (rule
 2), so they are flip-flops with a multiplexer tree.
 
-Options this leaves, for the owner:
+**Owner decision, second time, 2026-09-19: keep it** ("go do both", after
+seeing the 3.99 mm² figure). So the work is to prove it can get through the
+flow, and the options below are kept only as the fallback record.
+
+### Feasibility run, in progress
+
+Decimator alone, GHDL-converted, `SYNTH_STRATEGY "AREA 3"`, 40 ns, 35 %
+utilisation, `nice 19`, 4-hour limit, to detailed routing. Scratchpad
+`dec/cfg_decflow.json`, tag `decflow`.
+
+| Stage | Result |
+| --- | --- |
+| Synthesis | **7 min 9 s** (AREA 0 was still in ABC at 30 min). 596 236 cells, **5.43 mm²** synthesised cell area |
+| Floorplan | die **15.64 mm²**, core 15.50 mm², about 3.95 mm square |
+| Global placement | running at the time of writing, 4.5 GB resident |
+
+`AREA 3` is OpenLane's ORFS-derived area script (`strash; dch; map -B 0.9`),
+much lighter than `AREA 0`'s `mfs`/`retime`/`&nf` sequence. 5.43 mm² is more
+than the 3.99 mm² quick synthesis because of cell sizing (`dfxtp_2` and
+buffers) the quick run did not do. Results go to [runs.md](runs.md) when the
+run ends.
+
+Options, kept as the fallback record:
 
 1. Keep it, accept the run time, and plan Phase 4 for a long flow.
 2. Keep it but store the arrays in latches (`dlxtp`, about 25 % smaller than
@@ -74,7 +96,7 @@ Options this leaves, for the owner:
 
 ## Not done, and why
 
-- **1a and 1c code.** They edit `top_system`, which is converted last.
+- **Binding the FIFO.** The patched top still instantiates `async_fifo` with the megafunction's port list; it is bound to `src/async_fifo.v`, which adds `rst_n`, at Phase 3.
 - **`rmii_tx`-accurate FIFO test.** The system test models its handshake.
   The real module arrives in Phase 2.
 - **Provenance and conversion records** for the two GHDL conversions used in the

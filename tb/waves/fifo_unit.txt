@@ -1,0 +1,18 @@
+# async_fifo at depth 8: fill past full, drain past empty. See notes/waveforms.md.
+-- write domain (24.576 MHz)
+tb_async_fifo.rst_n        rst_n
+tb_async_fifo.wrclk        wrclk
+tb_async_fifo.wrreq        wrreq
+tb_async_fifo.data         data
+tb_async_fifo.wrfull       wrfull
+tb_async_fifo.dut.wbin     wbin            bin
+tb_async_fifo.dut.wgray    wgray           bin
+tb_async_fifo.dut.rgray_w2 rgray_sync      bin
+-- read domain (50 MHz)
+tb_async_fifo.rdclk        rdclk
+tb_async_fifo.rdreq        rdreq
+tb_async_fifo.rdempty      rdempty
+tb_async_fifo.q            q
+tb_async_fifo.dut.rbin     rbin            bin
+tb_async_fifo.dut.rgray    rgray           bin
+tb_async_fifo.dut.wgray_r2 wgray_sync      bin

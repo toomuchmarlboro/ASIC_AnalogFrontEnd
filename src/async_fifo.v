@@ -89,7 +89,7 @@ module async_fifo #(
     // ---- read domain ------------------------------------------------------
 
     reg  [ADDR_WIDTH:0] rbin;
-    reg  [ADDR_WIDTH:0] wgray_r1, wgray_r2;   // write pointer, synchronised
+    reg  [ADDR_WIDTH:0] wgray_r1, wgray_r2;   // write pointer, af
 
     wire                rd_en    = rdreq && !rdempty;
     wire [ADDR_WIDTH:0] rbin_nxt = rbin + {{ADDR_WIDTH{1'b0}}, rd_en};

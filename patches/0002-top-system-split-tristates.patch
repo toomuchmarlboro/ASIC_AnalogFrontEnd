@@ -1,0 +1,66 @@
+--- a/top_system.vhd
++++ b/top_system.vhd
+@@ -31,8 +31,16 @@
+         en_48v        : out std_logic;
+ 
+         -- I2C Interface (Pins 76 & 84)
+-        i2c_scl       : inout std_logic;
+-        i2c_sda       : inout std_logic;
++        -- [ASIC] Was `inout`. Tristate resolution belongs to a pad cell, so each
++        -- open-drain line is three ports: the pad level in, and a driver that
++        -- pulls the pad low when oe = '1' and releases it when oe = '0'.
++        -- See notes/ports.md.
++        i2c_scl_i     : in  std_logic;
++        i2c_scl_o     : out std_logic;
++        i2c_scl_oe    : out std_logic;
++        i2c_sda_i     : in  std_logic;
++        i2c_sda_o     : out std_logic;
++        i2c_sda_oe    : out std_logic;
+ 
+         -- ADAU1978 ADC Interface
+         bclk_out      : out std_logic;
+@@ -50,7 +58,9 @@
+         
+         -- LAN8720A SMI (MDIO/MDC)
+         eth_mdc       : out std_logic;
+-        eth_mdio      : inout std_logic;
++        eth_mdio_i    : in  std_logic;   -- [ASIC] was inout; never read, never driven
++        eth_mdio_o    : out std_logic;
++        eth_mdio_oe   : out std_logic;
+         
+         -- Miscellaneous PCB Signals
+         buffer_state  : out std_logic
+@@ -777,7 +787,9 @@
+     -- DUMMY ASSIGNMENTS FOR UNUSED PCB PINS
+     -- ==========================================
+     eth_mdc      <= '0';
+-    eth_mdio     <= 'Z'; -- High impedance (safe for bidirectional)
++    -- [ASIC] eth_mdio was held high-impedance. Same thing: never drive.
++    eth_mdio_o   <= '0';
++    eth_mdio_oe  <= '0';
+     
+     -- Buffer State waits for PLL lock before engaging the LMK1C1104PWR clock
+     -- buffers. Polarity is selectable because the KiCad symbol's "1G" pin may or
+@@ -850,12 +862,16 @@
+     -- cannot be checked from the netlist. Flip C_I2C_SWAP to test the other
+     -- mapping without touching the QSF.
+     -- ==========================================
+-    i2c_scl <= '0' when ((not C_I2C_SWAP) and m_scl_o = '0')
+-                     or (C_I2C_SWAP and m_sda_o = '0') else 'Z';
+-    i2c_sda <= '0' when ((not C_I2C_SWAP) and m_sda_o = '0')
+-                     or (C_I2C_SWAP and m_scl_o = '0') else 'Z';
+-    m_scl_i <= i2c_sda when C_I2C_SWAP else i2c_scl;
+-    m_sda_i <= i2c_scl when C_I2C_SWAP else i2c_sda;
++    -- [ASIC] The line is pulled low exactly when it used to be driven '0', and
++    -- released otherwise. The pad is `oe ? o : high-Z`, and o is always '0'.
++    i2c_scl_o  <= '0';
++    i2c_scl_oe <= '1' when ((not C_I2C_SWAP) and m_scl_o = '0')
++                        or (C_I2C_SWAP and m_sda_o = '0') else '0';
++    i2c_sda_o  <= '0';
++    i2c_sda_oe <= '1' when ((not C_I2C_SWAP) and m_sda_o = '0')
++                        or (C_I2C_SWAP and m_scl_o = '0') else '0';
++    m_scl_i <= i2c_sda_i when C_I2C_SWAP else i2c_scl_i;
++    m_sda_i <= i2c_scl_i when C_I2C_SWAP else i2c_sda_i;
+ 
+     -- Count SDATA transitions over a 65536-cycle window in the audio clock
+     -- domain: 2.7 ms at 24.576 MHz, 3.5 ms at 18.432 MHz, 5.3 ms at 12.288 MHz.

@@ -1,0 +1,14 @@
+# tdm8_rx: one full frame and the output latch update. See notes/waveforms.md.
+-- clocks and inputs
+tb_tdm8_rx_gate.rst          rst
+tb_tdm8_rx_gate.bclk         bclk
+tb_tdm8_rx_gate.lrclk        lrclk
+tb_tdm8_rx_gate.sdata        sdata
+-- tdm8_rx internals (RTL)
+tb_tdm8_rx_gate.u_rtl.lrclk_d   lrclk_d
+tb_tdm8_rx_gate.u_rtl.lrclk_d2  lrclk_d2
+tb_tdm8_rx_gate.u_rtl.sdata_f   sdata_f
+-- 192-bit output, four implementations
+tb_tdm8_rx_gate.ch_ref       ch_data_out(VHDL)
+tb_tdm8_rx_gate.ch_rtl       ch_data_out(RTL)
+tb_tdm8_rx_gate.ch_gate      ch_data_out(gate)

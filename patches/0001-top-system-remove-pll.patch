@@ -1,0 +1,199 @@
+--- a/legacy/rtl/top_system.vhd
++++ b/top_system.vhd
+@@ -6,6 +6,12 @@
+ 
+ entity top_system is
+     port (
++        -- [ASIC] External clock and reset. These replace the ALTPLL: the audio
++        -- master clock now arrives on a pin, and rst_n stands in for the PLL's
++        -- lock output. See notes/clocking.md.
++        clk_24m576    : in  std_logic;   -- audio master clock, 24.576 MHz
++        rst_n         : in  std_logic;   -- active low; released = clocks valid
++
+         -- Board Hardware
+         clk_50m_board : in  std_logic;
+ 
+@@ -57,21 +63,7 @@
+     -- COMPONENT DECLARATIONS
+     -- ==========================================
+     
+-    component pll_audio is
+-        port (
+-            areset : in  std_logic;
+-            inclk0 : in  std_logic;
+-            c0     : out std_logic;
+-            c1     : out std_logic;
+-            c2     : out std_logic;
+-            -- c3: 24.576 MHz like c2 but PHASE SHIFTED, used only to re-time
+-            -- lrclk_out at the pad. See C_LRCLK_PHASE_PS below and
+-            -- docs/LRCLK_PHASE_SHIFT.md. Must be added in the MegaWizard - the
+-            -- generated pll_audio.vhd currently has clk0/clk1/clk2 generics only.
+-            c3     : out std_logic;
+-            locked : out std_logic
+-        );
+-    end component;
++    -- [ASIC] component pll_audio removed. See notes/clocking.md.
+ 
+     component tdm8_master is
+         port (
+@@ -386,85 +378,11 @@
+     -- TX Arbiter State Lock
+     signal active_tx   : std_logic_vector(1 downto 0) := "00"; -- "00"=Idle, "01"=ARP, "10"=UDP
+ 
+-    -- ------------------------------------------------------------------
+-    -- LRCLK output phase, and the ONE constant that sets it.
+-    --
+-    -- The ADAU1978 samples LRCLK on the BCLK RISING edge (Table 5, tALS/tALH,
+-    -- slave mode). At 24.576 MHz the legal window for the LRCLK transition,
+-    -- measured from that edge, is
+-    --
+-    --     [ tALH , T - tALS ] = [ 5.00 , 30.69 ] ns        T = 40.690 ns
+-    --
+-    -- tdm8_master launches LRCLK on the FALLING edge of clk_18m, which is
+-    -- exactly T/2 = 20.345 ns - the only value a falling-edge launch can
+-    -- produce. That leaves 15.35 ns of hold margin and 10.34 ns of setup
+-    -- margin, and it is the value every image up to now has shipped.
+-    --
+-    -- Registering lrclk_int onto a PHASE SHIFTED copy of the same PLL clock
+-    -- puts the transition anywhere in the period instead. c3 is that copy.
+-    --
+-    -- WHICH WAY TO MOVE IT IS NOT KNOWN YET. ADC3/ADC4 drop out intermittently
+-    -- and the failure is at one end of the window or the other:
+-    --
+-    --   setup-limited (LRCLK arriving LATE at the part)  -> shift EARLIER, 105 deg
+-    --   hold-limited  (LRCLK arriving EARLY at the part) -> shift LATER,   225 deg
+-    --
+-    -- Guessing costs a bench session. docs/LRCLK_PHASE_SHIFT.md step 0 is a
+-    -- resistor test that determines the sign before anything is recompiled.
+-    --
+-    --   deg    ps      launch    hold margin   setup margin   C_BIT_ADJ
+-    --   180  20345     20.345 ns    15.35         10.34          -1   (today)
+-    --   105  11870     11.870 ns     7.87         18.82          -2
+-    --   225  25431     25.431 ns    20.43          5.26          -1
+-    --
+-    -- C_BIT_ADJ (tdm8_rx.vhd) differs between the two because of where the
+-    -- capture edge falls relative to lrclk_int's transition at 20.345 ns:
+-    --   105 deg - clk_lr rises at 11.870, BEFORE lrclk_int changes, so it
+-    --             carries the PREVIOUS cycle's value. One BCLK of added frame
+-    --             latency. C_BIT_ADJ must go -1 -> -2.
+-    --   225 deg - clk_lr rises at 25.431, AFTER lrclk_int changes, so it
+-    --             carries the SAME cycle's value. No added latency.
+-    --             C_BIT_ADJ stays at -1.
+-    --
+-    -- Setting this to 20345 reproduces today's timing through the new register
+-    -- (one BCLK later, so C_BIT_ADJ = -2) and is the control build.
+-    --
+-    -- *** THIS CONSTANT DOES NOT SET THE PHASE. ***
+-    -- The phase lives in the ALTPLL megafunction (ip/pll_audio), as
+-    -- clk3_phase_shift, and can only be changed in the MegaWizard. Editing the
+-    -- line below alone changes NOTHING about the built image. It exists so the
+-    -- intended value is recorded in the source next to the reasoning, and so a
+-    -- reader can tell at a glance which image they are looking at. Nothing in
+-    -- the toolchain enforces that the two agree - if you change one, change the
+-    -- other, and confirm against the fitter report as in step 5 of the doc.
+-    constant C_LRCLK_PHASE_PS : integer := 25431;   -- 225 deg. MIRROR OF THE PLL.
+-
+-    -- ------------------------------------------------------------------
+-    -- ...AND THE SWITCH THAT DECIDES WHETHER ANY OF THE ABOVE IS USED.
+-    --
+-    --   false - lrclk_out comes straight from tdm8_master, launched on the
+-    --           FALLING edge of clk_18m at T/2 = 20.345 ns. This is what every
+-    --           image up to and including 96K_ACT shipped, and 96K_ACT is the
+-    --           build on which all 16 channels are known to work on real
+-    --           hardware. c3 is still generated by the PLL and simply goes
+-    --           unused; the LRCLK path itself is identical to ACT's.
+-    --   true  - lrclk_out is re-timed onto c3 at C_LRCLK_PHASE_PS.
+-    --
+-    -- SET FALSE ON PURPOSE. The phase shift was built to chase intermittent
+-    -- ADC3/ADC4 dropouts, and docs/LRCLK_PHASE_SHIFT.md step 0 is explicit that
+-    -- the SIGN of the required shift is still unknown - 105 deg and 225 deg move
+-    -- it opposite ways and only a bench measurement can say which is right.
+-    -- Meanwhile the dropouts were traced to a misplaced DVDD decoupling cap and
+-    -- a dead U37, both fixed in hardware, and all 16 channels now run clean.
+-    --
+-    -- So there is no longer a fault for this to fix, and turning it on would
+-    -- change LRCLK timing at the same moment as the phantom readback goes in -
+-    -- two variables in one flash, on four boards, with the known-good reference
+-    -- image retired. If the dropouts ever return, the work is intact: flip this
+-    -- to true, set the MegaWizard phase to match C_LRCLK_PHASE_PS, and follow
+-    -- the doc. Until then it stays out of the signal path.
+-    -- ------------------------------------------------------------------
+-    constant C_LRCLK_RETIME : boolean := false;
++    -- [ASIC] The LRCLK re-timing path (C_LRCLK_RETIME, C_LRCLK_PHASE_PS and the
++    -- phase-shifted PLL output clk_lr) is removed. It was disabled in the
++    -- frozen firmware, and the ASIC has no PLL to make a shifted clock.
++    -- lrclk_out is lrclk_int, as it was with C_LRCLK_RETIME false.
++    -- See notes/clocking.md.
+ 
+     -- ------------------------------------------------------------------
+     -- 96 kHz -> 24 kHz DECIMATION.
+@@ -495,8 +413,6 @@
+ 
+     -- Audio Domain (18.432 MHz)
+     signal lrclk_int     : std_logic;
+-    signal clk_lr        : std_logic;               -- u_pll c3, phase shifted
+-    signal lrclk_pin_r   : std_logic := '0';        -- re-timed, drives the pad
+     signal ch_data_A_int : std_logic_vector(191 downto 0);
+     signal ch_data_B_int : std_logic_vector(191 downto 0);
+     signal tdm16_out_int : std_logic_vector(383 downto 0);
+@@ -1314,38 +1230,10 @@
+     end process;
+     lrclk_test <= std_logic(lrclk_div(25));   -- 18.432 MHz / 2^26 = 0.27 Hz, 3.6 s period
+ 
+-    -- Re-time LRCLK onto the phase shifted clock, immediately before the pad.
+-    --
+-    -- INACTIVE unless C_LRCLK_RETIME is true. With it false this register is
+-    -- built and then stripped, because lrclk_pin_r drives nothing - the pad
+-    -- takes lrclk_int directly, exactly as 96K_ACT did.
+-    --
+-    -- ONLY the pin moves. lrclk_int stays in the clk_18m domain and stays wired
+-    -- to u_rx_A / u_rx_B as their frame reference, so no new clock crossing is
+-    -- created inside the FPGA - which is the whole reason tdm8_master is NOT
+-    -- moved into the clk_lr domain instead. clk_lr and clk_18m come from the
+-    -- same PLL and derive_pll_clocks puts them in one synchronous group, so
+-    -- this register is a normal, fully analysable synchronous path.
+-    --
+-    -- At 105 deg (11.870 ns) against lrclk_int changing at 20.345 ns:
+-    --     setup  11.870 - (20.345 - 40.690) = 32.22 ns
+-    --     hold   20.345 - 11.870            =  8.47 ns
+-    -- At 225 deg (25.431 ns) the capture edge falls AFTER the data changes:
+-    --     setup  25.431 - 20.345            =  5.09 ns
+-    --     hold   (20.345 + 40.690) - 25.431 = 35.60 ns
+-    -- Both directions are comfortable; the tool will confirm on the real paths.
+-    process(clk_lr)
+-    begin
+-        if rising_edge(clk_lr) then
+-            lrclk_pin_r <= lrclk_int;
+-        end if;
+-    end process;
+-
+     -- The test mux stays on the RAW divider, not the re-timed copy: the 0.27 Hz
+     -- continuity square has nothing to do with frame timing and must not be
+     -- delayed by a register the test is not exercising.
+     lrclk_out    <= lrclk_test  when C_LRCLK_TEST_50PCT
+-               else lrclk_pin_r when C_LRCLK_RETIME
+                else lrclk_int;
+ 
+     -- ==========================================
+@@ -1397,15 +1285,12 @@
+     -- INSTANTIATIONS
+     -- ==========================================
+ 
+-    u_pll : pll_audio port map (
+-        areset => '0',    
+-        inclk0 => clk_50m_board,
+-        c0     => open,         -- 12.288 MHz -> 48 kHz, MCS=001, 32-BCLK slots
+-        c1     => open,         -- 18.432 MHz -> 96 kHz at 192 BCLK/frame, MCS=010
+-        c2     => clk_18m,      -- 24.576 MHz -> 96 kHz at 256 BCLK/frame, MCS=011
+-        c3     => clk_lr,       -- 24.576 MHz phase shifted, LRCLK pad re-timing
+-        locked => pll_locked
+-    );
++    -- [ASIC] u_pll removed. The audio clock comes straight from the pin, and
++    -- pll_locked is now the external reset released. Everything downstream of
++    -- pll_locked (sys_rst, buffer_state, the boot delays, the fault counters) is
++    -- unchanged. See notes/clocking.md.
++    clk_18m    <= clk_24m576;
++    pll_locked <= rst_n;
+ 
+     u_master : tdm8_master port map (
+         rst        => sys_rst,
