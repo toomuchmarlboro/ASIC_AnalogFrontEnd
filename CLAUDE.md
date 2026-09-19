@@ -271,6 +271,29 @@ gained by closing timing we do not need.
   Claude`, no "Generated with Claude Code" footer, not in commit messages, not
   in pull request bodies, not in file headers. The design is ours and the
   history should read that way.
+- Commit or push. See below.
+
+---
+
+## Git
+
+**Committing and pushing are mine, not yours.** Do not run `git commit`,
+`git push`, `git tag`, or anything else that writes to the repository or the
+remote. Not even when the work is obviously finished, and not even when I have
+approved the change itself — approving work is not approving a commit.
+
+What to do instead: when a unit of work is done, **write the commit message and
+give it to me in a fenced block**, ready to paste. Then stop.
+
+The message should be:
+
+- A subject line under ~72 characters, imperative mood, no trailing full stop
+- A body that says *why*, not what the diff already shows — the reasoning, what
+  was verified and how, what is still open
+- Plain text. No attribution footers of any kind
+
+Mention any file that is deliberately staged or left out, and why, so I do not
+have to reconstruct it at `git add` time.
 
 ---
 
