@@ -7,7 +7,7 @@ set -e
 MSIM="${MSIM:-C:/intelFPGA/16.1/modelsim_ase/win32aloem}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(dirname "$HERE")"
-RTL="${RTL:-C:/Users/LENOVO THINKPAD T14/Documents/TDM_UATR/rtl}"
+RTL="${RTL:-$ROOT/legacy/rtl}"
 WORKDIR="${1:-$ROOT/.sim}"
 
 mkdir -p "$WORKDIR"
