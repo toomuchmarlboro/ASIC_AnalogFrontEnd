@@ -127,3 +127,30 @@ Then `olrun "cd <repo> && openlane --run-tag <tag> <config>.json"`.
 
 Smoke test (`openlane --log-level ERROR --condensed --smoke-test`, run through
 `olrun`) exited 0 on this setup.
+
+### Server RTL tools — added 2026-09-19
+
+| Tool | Version | Source |
+| --- | --- | --- |
+| Icarus Verilog | 13.0 (stable, v13_0) | nixpkgs, flake registry `nixpkgs` |
+| GHDL | 6.0.0, mcode backend, GNAT 15.3.0 | same |
+| Verilator | 5.052 2026-09-05 | same |
+| nix-portable | sha256 `b409c55904c909ac3aeda3fb1253319f86a89ddd1ba31a5dec33d4a06414c72a` | `~/tools/nix-portable` |
+
+Not the same nixpkgs as OpenLane's shell, so these are separate from Yosys 0.46
+and the flow tools above. Run through a second wrapper in `~/tools/olenv.sh`:
+
+```bash
+tbrun() { (cd ~/tools && ./nix-portable nix-shell -I nixpkgs=flake:nixpkgs -p iverilog ghdl verilator --run "$1"); }
+```
+
+`-I nixpkgs=flake:nixpkgs` is needed: nix-portable's default `<nixpkgs>` is old
+enough to call the package `verilog`, and `nix shell --command` fails with
+`setting up a private mount namespace: Operation not permitted` inside
+nix-portable. `nix-shell -p` works.
+
+The sky130 functional cell models used by the gate-level check are in the PDK:
+`$PDK_ROOT/sky130A/libs.ref/sky130_fd_sc_hd/verilog/{primitives.v,sky130_fd_sc_hd.v}`,
+PDK `0fe599b2afb6708d281543108caf8310912f54af`, compiled with `-DFUNCTIONAL
+-DUNIT_DELAY=`. KLayout, Magic and Netgen remain inside the OpenLane
+`nix-shell`. ModelSim is still laptop-only.

@@ -25,15 +25,18 @@ point it at.
 ## Where it's at
 
 Phase 0 is done. `tdm8_rx` is converted, verified against the original VHDL
-(0 mismatches, three different stimulus configs), and has been through the full
-OpenLane flow on the lab server: GDSII produced, LVS and DRC clean, setup and
-hold met at 40 ns. Post-route it is 2 552 instances and 23 259 µm² on a
-222 x 233 µm die. Synthesis alone was 13 433 µm² in the standalone run, so the
-final layout is about 1.7 x that, mostly hold-fix cells on the shift register.
+(0 mismatches), and has been through the full OpenLane flow on the lab server:
+GDSII produced, LVS and DRC clean, setup met at 40 ns and hold met in every
+corner. Post-route it is 1 822 instances and 19 446 µm² of cells on a
+211 x 222 µm die. The synthesised and post-route netlists were both simulated
+against the RTL and the VHDL, six cases each, and match.
 
-What is still open from Phase 0 is a gate-level check that the synthesised
-netlist equals the RTL. LVS covers layout against netlist, not netlist against
-RTL. Details in [notes/phase0.md](notes/phase0.md).
+The first run was bigger, 2 552 instances and 23 259 µm², and had 33 fanout
+violations. The reset port was made active-low, the hold margin set to 0 and
+CTS clustering tightened; what each change bought and what it cost is in
+[notes/phase0.md](notes/phase0.md) and [notes/runs.md](notes/runs.md). One
+consequence carries forward: converted modules take an active-low `rst_n`
+([notes/decisions.md](notes/decisions.md)).
 
 Phases 1 through 5, and the deadlines, are in [WORKFLOW.md](WORKFLOW.md).
 
@@ -55,11 +58,18 @@ bash tb/run_tdm8_rx_equiv.sh
 That one needs ModelSim ASE and a clone of `TDM_UATR` next to this repo. Questa
 is also installed on the laptop but its `vsim` wants a licence, so ASE it is.
 
-OpenLane, on the server:
+OpenLane, on the server (rootless Nix, see `notes/environment.md`):
 
 ```
 cd ~/openlane2 && nix-shell
-openlane --run-tag tdm8rx1 <this repo>/config_tdm8_rx.json
+openlane --run-tag tdm8rx4 <this repo>/config_tdm8_rx.json
+```
+
+Gate-level and equivalence check on the server, inside a shell with GHDL and
+Icarus (`notes/environment.md`, `tbrun`):
+
+```
+bash tb/run_tdm8_rx_gate.sh runs/tdm8rx4/final/nl/tdm8_rx.nl.v
 ```
 
 ## Rules worth knowing before you change anything

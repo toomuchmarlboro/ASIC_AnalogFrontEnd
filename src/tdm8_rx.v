@@ -1,7 +1,8 @@
 // Converted from rtl/tdm8_rx.vhd. See notes/tdm8_rx.md.
+// The VHDL `rst` (active-high) is `rst_n` here; see notes/decisions.md.
 
 module tdm8_rx (
-    input  wire         rst,
+    input  wire         rst_n,   // active-low, asynchronous
     input  wire         bclk_in,
     input  wire         lrclk_in,
     input  wire         sdata_in,
@@ -17,15 +18,15 @@ module tdm8_rx (
     reg         sdata_f;
     integer     k;
 
-    always @(negedge bclk_in or posedge rst) begin
-        if (rst)
+    always @(negedge bclk_in or negedge rst_n) begin
+        if (!rst_n)
             sdata_f <= 1'b0;
         else
             sdata_f <= sdata_in;
     end
 
-    always @(posedge bclk_in or posedge rst) begin
-        if (rst) begin
+    always @(posedge bclk_in or negedge rst_n) begin
+        if (!rst_n) begin
             shift_reg   <= {264{1'b0}};
             ch_data_out <= {192{1'b0}};
             lrclk_d     <= 1'b0;

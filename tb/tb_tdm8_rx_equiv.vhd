@@ -38,6 +38,7 @@ architecture sim of tb_tdm8_rx_equiv is
     end component;
 
     signal rst         : std_logic := '1';
+    signal rst_n       : std_logic;                      -- converted Verilog takes active-low
     signal clk_mclk    : std_logic := '0';
     signal bclk        : std_logic;
     signal lrclk       : std_logic;
@@ -83,9 +84,11 @@ begin
             ch_data_out => ch_ref
         );
 
+    rst_n <= not rst;
+
     uut_dut: entity conv.tdm8_rx
         port map (
-            rst         => rst,
+            rst_n       => rst_n,
             bclk_in     => bclk,
             lrclk_in    => lrclk,
             sdata_in    => sdata_in,

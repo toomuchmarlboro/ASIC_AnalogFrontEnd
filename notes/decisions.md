@@ -1,0 +1,91 @@
+# decisions — non-obvious choices
+
+One entry per choice: date, decision, alternatives, reason. Newest last.
+
+## 2026-09-19 — Rootless Nix on the lab server
+
+**Decision.** Run OpenLane through `nix-portable` in `~/tools/`, no root.
+
+**Alternatives.** The Determinate Nix installer (needs root and `/nix`); Docker
+(`docker.sock` is `root:docker`, the account is not in the group); asking the
+server admin for either; conda packages for the point tools (off the
+documented OpenLane 2 path, version drift).
+
+**Reason.** No sudo, and user namespaces work. Cost and reproduction steps are
+in [environment.md](environment.md). If an admin later installs Nix
+system-wide, nothing here needs to change except the shell wrapper.
+
+## 2026-09-19 — Active-low reset port on `tdm8_rx`
+
+**Decision.** `src/tdm8_rx.v` takes `rst_n`, active-low, instead of the VHDL
+`rst`, active-high. Asynchronous style kept.
+
+**Authorised by.** The project owner, in session: "its fine if restructured".
+This overrides the CLAUDE.md line about not restructuring reset trees, for
+this change only. CLAUDE.md itself is not edited.
+
+**Alternatives tried, all on `tdm8_rx`, synthesis only.**
+
+| Attempt | Cells | Area µm² | Inverters |
+| --- | --- | --- | --- |
+| `rst` active-high port (`tdm8rx1`) | 1 094 | 15 687.5 | 451 |
+| `wire rst_n = ~rst`, flops on `negedge rst_n` (`tdm8rx2`) | 1 094 | 15 687.5 | 451 |
+| `SYNTH_ABC_BUFFERING` off, `SYNTH_ABC_AREA_USE_NF`, `AREA 1`: same result. `AREA 3`: 19 413.6. `DELAY 0`: 17 849.6 | not recorded | 15 687.5 to 19 413.6 | 451 (`DELAY 0`: 643) |
+| `rst_n` as the port (`tdm8rx3`) | 644 | 13 998.4 | 1 |
+
+**Reason.** Yosys folds an inverter on a reset back into the flop's polarity
+before mapping. `dfflegalize` then re-inserts one `$_NOT_` per flop to reach
+the library's active-low flop, and OpenLane's final `abc` does not merge them
+(the standalone script had an `opt_merge` after `abc`, which is why the laptop
+run showed one). Only a reset that is active-low at its source avoids it.
+Post-route, `tdm8rx3` against `tdm8rx1`: 2 552 to 2 019 instances, 23 259 to
+21 225 µm² (-8.7 %), die 52 005 to 46 796 µm², power -8 %.
+
+**Consequences for later phases.** This is a convention to adopt, not a
+one-off. The same per-flop inverter will appear in every module that resets
+with an active-high `rst`. Give every converted module an active-low `rst_n`
+port, and make the ASIC top-level reset an active-low input (`rst_n`), so no
+inverter is left for Yosys to fold across the flattened hierarchy. `top_system`
+on the FPGA is not touched. Where the VHDL derives `rst` from something
+active-high, invert once in the top level.
+
+**Verification of the change.** [phase0.md](phase0.md), *Netlist-to-RTL check*.
+
+## 2026-09-19 — Hold slack margin 0.1 ns to 0
+
+**Decision.** `PL_RESIZER_HOLD_SLACK_MARGIN` and `GRT_RESIZER_HOLD_SLACK_MARGIN`
+set to 0 in `config_tdm8_rx.json`.
+
+**Alternatives.** Keep the 0.1 ns default (447 to 450 hold delay cells, the
+largest single growth item in the layout); change CTS settings to cut skew
+(no effect on hold cell count in any of nine runs); change the RTL (nothing to
+change, the shift register is the design).
+
+**Reason.** The hold cells exist because a 255-stage flop-to-flop shift
+register has paths shorter than the clock skew. The default margin roughly
+doubles them. Measured: 450 to 246 hold cells, about 2 000 µm² (-9.6 %).
+Result is hold slack of +11 ps at the worst of nine corners, with no
+violations.
+
+**Cost, stated plainly.** That is no cushion. It is acceptable because this
+layout is registered and not fabricated, and no silicon has to tolerate
+process variation beyond what the signoff corners cover. It would be the wrong
+setting for anything that will run. **Revisit for the full chip:** the margin
+is applied to `config_tdm8_rx.json` only. `config.json` is unchanged.
+
+## 2026-09-19 — CTS sink clustering size 25 to 8
+
+**Decision.** `CTS_SINK_CLUSTERING_SIZE` 8 in `config_tdm8_rx.json`.
+`CTS_SINK_CLUSTERING_MAX_DIAMETER` left at its default 50.
+
+**Alternatives.** Sizes 6, 7, 9, 10, 12 and diameters 30 and 50, eleven runs
+in [runs.md](runs.md). Only 7 and 8 reach zero max-fanout violations. Diameter
+30 doubles the clock buffers for no gain. Raising `MAX_FANOUT_CONSTRAINT`
+instead would hide the violation rather than remove it.
+
+**Reason.** The 33 violations were all CTS buffers, 14 to 17 sinks against the
+PDK limit of 10, because one clock net feeds 450 flops. Size 8 clears them.
+Chosen over 7 on clock buffer count (78 against 80).
+
+**Caveat.** It is tuned to this design. 9 and 6 do not pass, so it is not a
+robust rule. Expect to redo the sweep for the full chip, which has two clocks.

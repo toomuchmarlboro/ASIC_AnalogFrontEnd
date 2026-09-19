@@ -12,16 +12,17 @@ Registration only — not fabrication.
 
 | Phase | State |
 | --- | --- |
-| 0 — prove the path | **Done.** OpenLane run `tdm8rx1`: GDSII, LVS clean, DRC clean. Gate-level netlist check still open |
+| 0 — prove the path | **Done.** OpenLane run `tdm8rx4`: GDSII, LVS clean, DRC clean, gate-level netlist verified |
 | 1 — vendor IP removal | Starting |
 | 2 — bulk conversion | Not started |
 | 3 — integration | Not started |
 | 4 — flow | Not started |
 | 5 — filing artifacts | Not started |
 
-Phase 0 result: `tdm8_rx` synthesises to 644 cells, 13 432.88 µm², 450 flops,
-83.8 % sequential. Projected core ~38 000 µm² at 35 % utilisation, about 195 µm
-square. A 16-channel system fits inside 1 mm² comfortably.
+Phase 0 result: `tdm8_rx` synthesises to 644 cells, 13 998 µm² in OpenLane
+(13 433 standalone), 450 flops, 83.8 % sequential. Post-route: 1 822 instances,
+19 446 µm² of cells, 211 x 222 µm die. A 16-channel system fits inside 1 mm²
+comfortably: two of these are about 0.04 mm² of cells.
 
 **Retired 2026-09-19:** the back end (OpenROAD, Magic, Netgen) is proven on `tdm8_rx`.
 It routes, the power grid closes and LVS is clean. See `notes/phase0.md`.
