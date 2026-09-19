@@ -1,0 +1,14 @@
+# Phase 0 standalone synthesis: src/tdm8_rx.v -> sky130_fd_sc_hd.
+# Run from the repo root with the liberty at pdk/. See notes/phase0.md.
+
+read_verilog src/tdm8_rx.v
+hierarchy -check -top tdm8_rx
+synth -top tdm8_rx -flatten
+dfflibmap -liberty pdk/sky130_fd_sc_hd__tt_025C_1v80.lib
+opt -full
+abc -liberty pdk/sky130_fd_sc_hd__tt_025C_1v80.lib -D 40000 -dont_use sky130_fd_sc_hd__lpflow_*
+setundef -zero
+opt_merge
+opt_clean -purge
+write_verilog -noattr out/tdm8_rx_netlist.v
+tee -o out/stat.txt stat -liberty pdk/sky130_fd_sc_hd__tt_025C_1v80.lib

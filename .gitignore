@@ -1,0 +1,17 @@
+# Working directories, not deliverables
+.sim/
+out/
+runs/
+
+# PDK files fetched locally; the server gets them from OpenLane
+pdk/
+
+# Simulator droppings
+modelsim.ini
+transcript
+*.wlf
+work/
+conv/
+
+# local tool settings
+.claude/settings.local.json
