@@ -5,13 +5,16 @@
 | [environment.md](environment.md) | Tool versions, per machine. Append, never overwrite |
 | [phase0.md](phase0.md) | Phase 0: conversion, verification, synthesis, open blocker |
 | [runs.md](runs.md) | One entry per OpenLane run, failures included |
+| [phase1.md](phase1.md) | Phase 1: what is built, what disagrees with the brief, the decimator finding |
+| [fifo.md](fifo.md) | The CDC FIFO: megafunction as read, depth chosen by measurement, verification |
+| [clocking.md](clocking.md) | PLL removal, external 24.576 MHz clock, three domains, reset |
+| [ports.md](ports.md) | Tristate split, three `inout`s, top-level port changes |
 | [decisions.md](decisions.md) | Non-obvious choices, with alternatives and cost |
 | [results.md](results.md) | Numbers, each traceable to the command that produced it |
 | [tdm8_rx.md](tdm8_rx.md) | `tdm8_rx` conversion record — folds into `conversion.md` at Phase 2 |
 
-Not yet written, one per WORKFLOW.md: `provenance.md`, `decisions.md`,
-`clocking.md`, `fifo.md`, `ports.md`, `conversion.md`, `integration.md`,
-`runs.md`, `drc.md`, `filing.md`.
+Not yet written, one per WORKFLOW.md: `provenance.md`, `conversion.md`,
+`integration.md`, `drc.md`, `filing.md`.
 
 ## Where Phase 0 stands
 

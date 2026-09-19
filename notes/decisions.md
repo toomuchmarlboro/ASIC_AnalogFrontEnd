@@ -89,3 +89,48 @@ Chosen over 7 on clock buffer count (78 against 80).
 
 **Caveat.** It is tuned to this design. 9 and 6 do not pass, so it is not a
 robust rule. Expect to redo the sweep for the full chip, which has two clocks.
+
+## 2026-09-19 — FIFO 512 deep, not 1024
+
+**Decision.** `src/async_fifo.v` defaults to `ADDR_WIDTH` 9, 512 x 8.
+
+**Alternatives.** 1024 x 8, the megafunction's size; 256 x 8.
+
+**Reason.** A packet is 410 bytes and `udp_tx_core` reads it only after it is
+complete, so 256 cannot work (confirmed, 154 dropped bytes) and 512 is the
+smallest power of two. Measured peak occupancy with the real producer and
+consumer is 410, or 464 with a 7 µs transmit-line stall. Stall tolerance at 512
+is about 15 µs at 96 kHz and about 60 µs at 24 kHz, against a realistic worst
+case of about 7 µs. 1024 would cost twice the storage, about 0.18 mm² more,
+for headroom nothing uses. Evidence: [fifo.md](fifo.md).
+
+**Cost.** Overflow is silent and unrecoverable, because `packet_formatter`
+never checks `wrfull`. The margin is what protects against it. Revisit if the
+line can ever stall longer than about 15 µs at 96 kHz.
+
+## 2026-09-19 — Include the decimator (owner decision, needs re-confirmation)
+
+**Decision.** The ASIC includes `decimator`, so `C_DECIMATE` stays `true`, the
+frozen firmware's default. Chosen by the project owner from three options.
+
+**Alternatives.** Exclude it and set `C_DECIMATE := false` (the documented
+known-good reference configuration, 96 kHz packets); or measure first.
+
+**Status.** Made before the area was known. Measured afterwards: 3.99 mm² and
+625 612 cells for the decimator alone, roughly ten times the rest of the
+design, see [phase1.md](phase1.md). **Re-confirm before Phase 2 starts on it.**
+Phase 1 work does not depend on the answer; the FIFO depth was chosen to cover
+both rates.
+
+## 2026-09-19 — Top-level defaults proposed, awaiting owner confirmation
+
+Not decisions yet. Each is the default that would be used at Phase 3 unless
+told otherwise; reasons in [clocking.md](clocking.md) and [ports.md](ports.md).
+
+- Keep `clk_50m_board` as a third clock input rather than fold it into
+  `rmii_ref_clk`. The config's `CLOCK_PORT` then has three entries.
+- Replace `pll_locked` with an external active-low `rst_n`, keeping the
+  packet's status bits and so the wire format.
+- Split `eth_mdio` into `_i`, `_o` = 0, `_oe` = 0 like the I2C pins.
+- Remove the `c3` phase-shifted clock and the LRCLK re-timing path, dead while
+  `C_LRCLK_RETIME` is false.
