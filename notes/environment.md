@@ -20,7 +20,7 @@ version-pinned will not reproduce next year.
 | GHDL | **not installed** | needed for the Phase 2 route |
 | KLayout | **not installed** | needed for Phase 5 plots |
 
-### Lab server — not yet recorded
+### Lab server — recorded 2026-09-19, see the dated entry at the end of this file
 
 Fill in on first use: `uname -a`, `lsb_release -a`, `nix --version`,
 `git -C ~/openlane2 rev-parse HEAD`, PDK commit from the run's `resolved.json`,
@@ -78,3 +78,52 @@ or Netgen. See [phase0.md](phase0.md), *Blocker*.
 
 `pdk/`, `out/` and `.sim/` are working directories, not part of the design.
 Only `src/`, `tb/`, `notes/` and `config.json` are deliverables.
+
+## Lab server — 2026-09-19
+
+Host `v-maxwell-pc2`, shared machine, no root, no sudo. Manjaro Linux
+26.1.0-pre, kernel 6.12.91-1-MANJARO (`uname -a`), 16 cores, 46 GB RAM.
+
+| Tool | Version | How obtained / how to get it |
+| --- | --- | --- |
+| Nix | 2.20.6, rootless | `nix-portable`, latest release as of 2026-09-19 (no version pinned; hash below) in `~/tools/`, store in `~/tools/np-store` |
+| OpenLane | 2.3.10 | `~/openlane2`, commit `a7b0e6dba75ee7e891ff3d7824b29473d9cad289` (`2.3.10-1-ga7b0e6d`), from `git -C ~/openlane2 rev-parse HEAD` |
+| PDK | sky130A, volare `0fe599b2afb6708d281543108caf8310912f54af` | `PDK_ROOT` in the run's `resolved.json` |
+| Standard cells | `sky130_fd_sc_hd`, signoff corners nom/min/max x tt_025C_1v80, ss_100C_1v60, ff_n40C_1v95 | OpenLane default |
+| Yosys | 0.46 (git e97731b9dda9) | inside `nix-shell`, `yosys -V` |
+| OpenROAD | `edf00dff99f6c40d67a30c0e22a8191c5d2ed9d6` | inside `nix-shell`, `openroad -version` prints only the commit |
+| OpenSTA | 2.6.0 | inside `nix-shell`, `sta -version` |
+| Magic | 8.3.489 | inside `nix-shell`, `magic --version` |
+| Netgen | 1.5.278 | inside `nix-shell` |
+| KLayout | 0.29.4 | inside `nix-shell`, `klayout -v` |
+| GHDL, Icarus, Verilator | **not installed on the server** | needed from Phase 1; not needed for Phase 0 |
+
+Note the synthesis tool differs from the laptop: OpenLane's Yosys is 0.46, the
+Phase 0 standalone run used 0.69. Numbers from the two are not interchangeable,
+see [runs.md](runs.md) `tdm8rx1`.
+
+### Why rootless Nix
+
+The server has no Nix, `/var/run/docker.sock` is `root:docker` and the account
+is not in that group, and `sudo` needs a password. The Determinate installer
+and the Docker route both need root. User namespaces work
+(`unshare -Ur true`), so `nix-portable` runs Nix without root. Cost: 6.2 GB in
+`~/tools/np-store` after the first `nix-shell`, plus the PDK under `~/.volare`.
+Cache used: `https://openlane.cachix.org`.
+
+### Reproducing the shell
+
+`~/tools/olenv.sh`, which is not in the repo:
+
+```bash
+export NP_LOCATION=$HOME/tools/np-store
+export NIX_CONFIG="extra-substituters = https://openlane.cachix.org
+extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
+experimental-features = nix-command flakes"
+olrun() { (cd ~/openlane2 && ~/tools/nix-portable nix-shell --run "$1"); }
+```
+
+Then `olrun "cd <repo> && openlane --run-tag <tag> <config>.json"`.
+
+Smoke test (`openlane --log-level ERROR --condensed --smoke-test`, run through
+`olrun`) exited 0 on this setup.

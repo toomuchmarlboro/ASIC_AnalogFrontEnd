@@ -12,7 +12,7 @@ Registration only — not fabrication.
 
 | Phase | State |
 | --- | --- |
-| 0 — prove the path | Synthesis done. **OpenLane back end not yet run** |
+| 0 — prove the path | **Done.** OpenLane run `tdm8rx1`: GDSII, LVS clean, DRC clean. Gate-level netlist check still open |
 | 1 — vendor IP removal | Starting |
 | 2 — bulk conversion | Not started |
 | 3 — integration | Not started |
@@ -23,9 +23,8 @@ Phase 0 result: `tdm8_rx` synthesises to 644 cells, 13 432.88 µm², 450 flops,
 83.8 % sequential. Projected core ~38 000 µm² at 35 % utilisation, about 195 µm
 square. A 16-channel system fits inside 1 mm² comfortably.
 
-**Open risk:** the back end (OpenROAD, Magic, Netgen) is unproven. Clean synthesis
-says nothing about routing congestion, the power grid or LVS. This must be retired
-by **1 October**.
+**Retired 2026-09-19:** the back end (OpenROAD, Magic, Netgen) is proven on `tdm8_rx`.
+It routes, the power grid closes and LVS is clean. See `notes/phase0.md`.
 
 ---
 

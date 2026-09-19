@@ -1,7 +1,7 @@
 # Phase 0 — prove the path with `tdm8_rx`
 
-Status: **conversion and verification done, synthesis done, GDSII blocked.**
-Date: 2026-09-19.
+Status: **complete. Conversion, verification, synthesis and the OpenLane back end all done; GDSII produced, LVS and DRC clean.**
+Date: 2026-09-19. Back end run on the lab server, run tag `tdm8rx1`.
 
 ## What was done
 
@@ -11,7 +11,8 @@ Date: 2026-09-19.
    configurations, plus a known-pattern check. Results below.
 3. Synthesised standalone to sky130_fd_sc_hd with Yosys. Area and cell count
    in [results.md](results.md).
-4. OpenLane could not be run on this machine. See *Blocker* below.
+4. OpenLane could not be run on the laptop. Run on the lab server instead:
+   GDSII, LVS clean, DRC clean. See *Back end* below.
 
 ## Verification
 
@@ -68,32 +69,40 @@ Without the exclusion ABC picks `lpflow_isobufsrc_1` for one buffer; it is a
 power-gating cell, it carries no logic function in the liberty, and it has no
 business in a design with one power domain.
 
-## Blocker — OpenLane
+## Back end — OpenLane on the lab server
 
-**Phase 0 cannot finish on this machine as configured.** OpenLane needs Linux:
-either Docker (OpenLane 1) or Nix (OpenLane 2), and in both cases the
-point-tools — OpenROAD, Magic, KLayout, Netgen — have no Windows builds. On
-this machine:
+Run `tdm8rx1`, 2026-09-19, `config_tdm8_rx.json` unchanged from the repo.
+Full record: [runs.md](runs.md). Numbers: [results.md](results.md). Versions:
+[environment.md](environment.md).
 
-- Docker: not installed.
-- WSL: `wsl.exe` is the stub only, no distribution, and the feature install
-  needs administrator rights this session does not have.
-- The synthesis half of the flow does run natively, which is what produced the
-  numbers above, but synthesis is not a GDSII.
+Result: 78-stage flow completed with no failures. **GDSII produced. LVS: 0
+errors. DRC: 0 (Magic and KLayout both). Antenna: 0. Setup slack +11.86 ns at
+40 ns, hold +0.133 ns.** Die 222.75 x 233.47 µm, 23 259 µm² of cells, 2 552
+instances including tap cells.
 
-Options, in the order I would take them:
+What this retires: the risk that the back end was unproven. The design routes,
+the power grid is complete, and LVS closes. It was the open item for the 1
+October gate, and it closed on 19 September.
 
-1. **Enable WSL2 and install OpenLane 2 inside it.** `wsl --install` from an
-   elevated prompt, then a reboot, then a distribution, then Nix. This is the
-   path that ends in a GDSII on this laptop and it only needs the user's
-   administrator password once.
-2. Run the flow on any Linux box or a cloud VM, with `src/` and `config.json`
-   copied across.
-3. Efabless' hosted flows are gone; do not plan around them.
+What Phase 0 changed in the expectations:
 
-Until one of those happens, every later phase can still proceed — conversion,
-verification and synthesis all run here — but the GDSII, LVS and DRC parts of
-the definition of done stay open.
+- **Area is about 1.7 x the synthesis number.** 13 433 µm² standalone, 15 688
+  µm² in OpenLane's own synthesis, 23 259 µm² final. The growth is 447 hold
+  delay cells on the shift register and clock and reset buffering. Anything
+  scaled from the standalone synthesis figure should use the final layout
+  ratio instead. The earlier statement that a 16-channel system fits well
+  inside 1 mm² still holds by a wide margin: the cell area of two of these is about 0.05 mm².
+- **OpenLane synthesis puts an inverter on `rst` per flop** (450), which the
+  standalone script had merged. Function is unchanged, area is not. Left alone
+  under the no-restructure rule. See [runs.md](runs.md).
+- **The `tdm8rx1` config needed no relaxation.** No utilisation or clock
+  changes were required, so no entry in `decisions.md` for this run.
+
+## Server setup
+
+The server had no Nix and no Docker access for this account. The toolchain was
+installed rootless with `nix-portable`. Steps and cost in
+[environment.md](environment.md).
 
 ## Deferred
 
@@ -101,5 +110,9 @@ the definition of done stay open.
   `equiv_make` / `equiv_induct`; Yosys cannot build SAT models for liberty
   blackboxes, so the proof does not complete. A gate-level simulation would
   need the sky130 behavioural cell models, which are a per-cell file set in the
-  skywater PDK repo rather than one includable file. Left for the OpenLane run,
-  which does its own LVS and STA against the same netlist.
+  skywater PDK repo rather than one includable file. **Still open after the
+  OpenLane run.** LVS shows the layout matches the synthesised netlist and STA
+  checks timing, but neither proves the netlist equals the RTL. The PDK is now
+  on the server, so this can be done with the cell models under
+  `~/.volare/volare/sky130/versions/0fe599b2.../sky130A/libs.ref/sky130_fd_sc_hd/verilog/`.
+  Icarus is not yet installed there.

@@ -24,17 +24,16 @@ point it at.
 
 ## Where it's at
 
-Phase 0, half done. `tdm8_rx` is converted, verified against the original VHDL
-(0 mismatches, three different stimulus configs), and synthesises to 644 cells
-and 13 433 µm² on sky130. Reasonable for what it is — 84 % of that area is
-flip-flops, because the module is a 264-bit shift register and a 192-bit latch
-and not much else.
+Phase 0 is done. `tdm8_rx` is converted, verified against the original VHDL
+(0 mismatches, three different stimulus configs), and has been through the full
+OpenLane flow on the lab server: GDSII produced, LVS and DRC clean, setup and
+hold met at 40 ns. Post-route it is 2 552 instances and 23 259 µm² on a
+222 x 233 µm die. Synthesis alone was 13 433 µm² in the standalone run, so the
+final layout is about 1.7 x that, mostly hold-fix cells on the shift register.
 
-What hasn't happened yet is the back end. No place and route, no GDSII, no LVS,
-no DRC. That needs OpenLane, OpenLane needs Linux, and the laptop has no WSL
-and no Docker. So it moves to the lab server. Until that run happens we don't
-actually know the design routes, and clean synthesis is not evidence that it
-does.
+What is still open from Phase 0 is a gate-level check that the synthesised
+netlist equals the RTL. LVS covers layout against netlist, not netlist against
+RTL. Details in [notes/phase0.md](notes/phase0.md).
 
 Phases 1 through 5, and the deadlines, are in [WORKFLOW.md](WORKFLOW.md).
 
