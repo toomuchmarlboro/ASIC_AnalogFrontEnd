@@ -150,3 +150,54 @@ reversed.
   `_o` = 0, `_oe` = 0 like the I2C pins.
 - **Applied.** Remove the `c3` phase-shifted clock and the LRCLK re-timing
   path, dead while `C_LRCLK_RETIME` is false.
+
+## 2026-09-20 — Phase 2: convert to Verilog with `ghdl --synth`, in one pass
+
+**Decision.** `src/` holds the whole chip as generated Verilog-2005, produced
+by `synth/convert_vhdl.sh` in a single `ghdl --synth --out=verilog` pass from
+the patched top. No module is hand-converted.
+
+**Superseded on the same day:** the first decision was to keep VHDL end to end
+through the GHDL Yosys plugin, on the strength of `CLAUDE.md`'s "keep VHDL end
+to end and skip the conversion entirely". That reading ignored the definition
+of done ("`src/` contains synthesisable Verilog"), the Phase 4 config
+(`dir::src/*.v`) and WORKFLOW.md's Phase 2 route. The owner caught it. The
+plugin is still used, as the reference side of the equivalence proofs.
+
+**Why one pass and not file by file.** Three modules take generic values from
+the top. Converting files separately bakes in the entity defaults instead -
+`BOOT_DELAY_CYCLES` 2 000 000 rather than 7 500 000, and so on - which would
+produce a chip that boots wrongly and looks fine. See
+[conversion.md](conversion.md).
+
+**Alternatives.** Per-module `ghdl --synth --out=verilog` into `src/*.v`, which
+is WORKFLOW.md's Phase 2 route; or hand conversion, which `CLAUDE.md` says to
+use only for what the plugin rejects.
+
+**Reason.** `CLAUDE.md` allows one day to try the plugin before falling back.
+It took well under a day: the whole chip imports and synthesises in 3.5 minutes
+to 628 684 cells, `check` clean, no Altera references. Four things were needed
+(`--latches`, `read_liberty` before `check`, the lpflow exclusion, and the FIFO
+blackbox swap), all recorded in [conversion.md](conversion.md). Keeping VHDL
+means the FPGA sources stay the single source of truth, there is no generated
+Verilog to re-verify or to drift, and the DTLST provenance chain is shorter:
+our VHDL, our patches, one tool, the netlist.
+
+**Cost.** OpenLane's own `VHDL_FILES` path calls `ghdl` without `--std=08` or
+`--latches`, so the Phase 4 flow cannot simply be pointed at the VHDL. Either
+the flow runs on a netlist produced by `synth/run_top_ghdl.sh`, or those two
+flags have to reach OpenLane's ghdl call. That is the first thing to settle in
+Phase 4.
+
+## 2026-09-20 — `tb_chain` and `tb_tdm16` are not usable as gates
+
+**Decision.** Replace them: `tb/tb_tdm16_merge_gate.v` for `tdm16_merge`, and
+the top-level `tb/tb_top_port.vhd` for the chain. Record `tb_chain`'s failure
+rather than work around it.
+
+**Reason.** `sim/tb_tdm16.vhd` has no assertions at all, and `sim/tb_chain.vhd`
+fails on the unmodified FPGA sources. Neither can gate this port.
+[conversion.md](conversion.md) has the evidence for both.
+
+**Open.** `tb_chain`'s failure is not diagnosed. It is on the FPGA side, not
+ours, but it deserves an hour before anyone trusts the `sim/` directory again.

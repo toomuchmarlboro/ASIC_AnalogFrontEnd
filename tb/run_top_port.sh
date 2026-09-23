@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Equivalence check for the top-level port changes (PLL removal, tristate split).
+# Equivalence check for the top-level patches: PLL removal, tristate split,
+# FIFO binding (0001..0003).
 # See tb/tb_top_port.vhd, notes/clocking.md, notes/ports.md.
 # Needs ghdl on PATH (notes/environment.md, `tbrun`).
 #
@@ -33,7 +34,8 @@ mkdir -p "$WORKDIR"; cd "$WORKDIR"; rm -f *.vhd *.cf *.o e~* 2>/dev/null || true
 
 cp "$RTL/top_system.vhd" top_ref.vhd
 patch -s -o top_dut1.vhd "$RTL/top_system.vhd" "$ROOT/patches/0001-top-system-remove-pll.patch"
-patch -s -o top_dut.vhd top_dut1.vhd "$ROOT/patches/0002-top-system-split-tristates.patch"
+patch -s -o top_dut2.vhd top_dut1.vhd "$ROOT/patches/0002-top-system-split-tristates.patch"
+patch -s -o top_dut.vhd top_dut2.vhd "$ROOT/patches/0003-top-system-bind-async-fifo.patch"
 
 [ -n "$MUTATE" ] && sed -i "$MUTATE" top_dut.vhd
 [ -n "$MUTATE_FILE" ] && sed -i -f "$MUTATE_FILE" top_dut.vhd

@@ -13,8 +13,8 @@ Registration only — not fabrication.
 | Phase | State |
 | --- | --- |
 | 0 — prove the path | **Done.** OpenLane run `tdm8rx4`: GDSII, LVS clean, DRC clean, gate-level netlist verified |
-| 1 — vendor IP removal | Starting |
-| 2 — bulk conversion | Not started |
+| 1 — vendor IP removal | **Done.** PLL removed, FIFO reimplemented (512 x 8), tristates split; patches 0001-0003, all verified |
+| 2 — bulk conversion | **Done.** `src/` holds the whole chip as generated Verilog-2005; 10 of 12 modules formally proven equivalent to their VHDL. See `notes/conversion.md` |
 | 3 — integration | Not started |
 | 4 — flow | Not started |
 | 5 — filing artifacts | Not started |

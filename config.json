@@ -1,10 +1,14 @@
 {
   "DESIGN_NAME": "top_system",
   "VERILOG_FILES": "dir::src/*.v",
-  "CLOCK_PORT": ["clk_24m576", "rmii_ref_clk"],
+  "CLOCK_PORT": [
+    "clk_24m576",
+    "rmii_ref_clk",
+    "clk_50m_board"
+  ],
   "CLOCK_PERIOD": 40,
   "FP_CORE_UTIL": 35,
   "PL_TARGET_DENSITY_PCT": 40,
-  "SYNTH_STRATEGY": "AREA 0",
+  "SYNTH_STRATEGY": "AREA 3",
   "RUN_LINTER": true
 }

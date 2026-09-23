@@ -9,13 +9,14 @@
 | [fifo.md](fifo.md) | The CDC FIFO: megafunction as read, depth chosen by measurement, verification |
 | [clocking.md](clocking.md) | PLL removal, external 24.576 MHz clock, three domains, reset |
 | [ports.md](ports.md) | Tristate split, three `inout`s, top-level port changes |
+| [provenance.md](provenance.md) | The chain from our VHDL to the layout, with hashes — the DTLST evidence |
+| [conversion.md](conversion.md) | Phase 2: the GHDL-plugin route, what it needed, module gates |
 | [waveforms.md](waveforms.md) | Every figure in `figures/`, what it shows, how to regenerate it |
 | [decisions.md](decisions.md) | Non-obvious choices, with alternatives and cost |
 | [results.md](results.md) | Numbers, each traceable to the command that produced it |
 | [tdm8_rx.md](tdm8_rx.md) | `tdm8_rx` conversion record — folds into `conversion.md` at Phase 2 |
 
-Not yet written, one per WORKFLOW.md: `provenance.md`, `conversion.md`,
-`integration.md`, `drc.md`, `filing.md`.
+Not yet written, one per WORKFLOW.md: `integration.md`, `drc.md`, `filing.md`.
 
 ## Where Phase 0 stands
 

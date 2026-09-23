@@ -4,8 +4,9 @@
 // BCLK and 1 ns after every reset assertion:
 //
 //   ref   legacy/rtl/tdm8_rx.vhd through `ghdl --synth --out=verilog`
-//   v1    src/tdm8_rx.v as first verified (git 39e609a), reset port `rst`, active-high
-//   rtl   src/tdm8_rx.v as it is now, reset port `rst_n`, driven with ~rst
+//   v1    the hand conversion as first verified (git 39e609a), active-high `rst`
+//   rtl   phase0/tdm8_rx.v, the Phase 0 hand conversion, active-low `rst_n`
+//   conv  src/tdm8_rx.v, the Phase 2 generated module, active-high `rst`
 //   gate  a synthesised or placed netlist, run on the sky130 cell models
 //
 // BCLK and LRCLK come from tdm8_master, also through GHDL, exactly as in
@@ -25,7 +26,7 @@ module tb_tdm8_rx_gate;
     wire bclk, lrclk;
     wire rst_n = ~rst;
 
-    wire [191:0] ch_ref, ch_v1, ch_rtl, ch_gate;
+    wire [191:0] ch_ref, ch_v1, ch_rtl, ch_conv, ch_gate;
 
     // 24.576 MHz, the master clock the design is specified for
     localparam real HALF = 20.345;
@@ -36,6 +37,7 @@ module tb_tdm8_rx_gate;
     tdm8_rx_vhdl u_ref  (.rst(rst), .bclk_in(bclk), .lrclk_in(lrclk), .sdata_in(sdata), .ch_data_out(ch_ref));
     tdm8_rx_v1   u_v1   (.rst(rst), .bclk_in(bclk), .lrclk_in(lrclk), .sdata_in(sdata), .ch_data_out(ch_v1));
     tdm8_rx      u_rtl  (.rst_n(rst_n), .bclk_in(bclk), .lrclk_in(lrclk), .sdata_in(sdata), .ch_data_out(ch_rtl));
+    tdm8_rx_conv u_conv (.rst(rst),     .bclk_in(bclk), .lrclk_in(lrclk), .sdata_in(sdata), .ch_data_out(ch_conv));
     tdm8_rx_gate u_gate (.rst_n(rst_n), .bclk_in(bclk), .lrclk_in(lrclk), .sdata_in(sdata), .ch_data_out(ch_gate));
 
     reg [23:0] test_frame [0:7];
@@ -66,7 +68,7 @@ module tb_tdm8_rx_gate;
     // ---- comparison -------------------------------------------------------
 
     reg     armed = 1'b0;      // set at the first reset release
-    integer cmp = 0, mm_v1 = 0, mm_rtl = 0, mm_gate = 0, nreset = 0;
+    integer cmp = 0, mm_v1 = 0, mm_rtl = 0, mm_conv = 0, mm_gate = 0, nreset = 0;
 
     task compare;
         begin
@@ -78,6 +80,10 @@ module tb_tdm8_rx_gate;
             if (ch_rtl !== ch_ref) begin
                 mm_rtl = mm_rtl + 1;
                 if (mm_rtl < 4) $display("MISMATCH rtl  at %0t", $time);
+            end
+            if (ch_conv !== ch_ref) begin
+                mm_conv = mm_conv + 1;
+                if (mm_conv < 4) $display("MISMATCH conv at %0t", $time);
             end
             if (ch_gate !== ch_ref) begin
                 mm_gate = mm_gate + 1;
@@ -150,8 +156,8 @@ module tb_tdm8_rx_gate;
 
         $display("slot=%0d launch=%0d random=%0d frames=%0d seed=%0d resets=%0d",
                  SLOT, LAUNCH, RANDOM, FRAMES, SEED, nreset);
-        $display("comparisons=%0d  mismatches: v1=%0d rtl=%0d gate=%0d",
-                 cmp, mm_v1, mm_rtl, mm_gate);
+        $display("comparisons=%0d  mismatches: v1=%0d rtl=%0d conv=%0d gate=%0d",
+                 cmp, mm_v1, mm_rtl, mm_conv, mm_gate);
 
         if (PATTERN != 0) begin
             for (ch = 0; ch < 8; ch = ch + 1) begin
@@ -165,7 +171,7 @@ module tb_tdm8_rx_gate;
             end
         end
 
-        if (mm_v1 != 0 || mm_rtl != 0 || mm_gate != 0) begin
+        if (mm_v1 != 0 || mm_rtl != 0 || mm_conv != 0 || mm_gate != 0) begin
             $display("EQUIVALENCE FAIL");
             $finish(1);
         end

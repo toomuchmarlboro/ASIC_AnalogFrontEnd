@@ -1,6 +1,6 @@
 {
   "DESIGN_NAME": "tdm8_rx",
-  "VERILOG_FILES": "dir::src/tdm8_rx.v",
+  "VERILOG_FILES": "dir::phase0/tdm8_rx.v",
   "CLOCK_PORT": "bclk_in",
   "CLOCK_PERIOD": 40,
   "FP_CORE_UTIL": 35,

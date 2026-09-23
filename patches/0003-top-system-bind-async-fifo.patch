@@ -1,0 +1,23 @@
+--- a/top_system.vhd
++++ b/top_system.vhd
+@@ -154,8 +154,12 @@
+         );
+     end component;
+ 
++    -- [ASIC] The Altera dcfifo is replaced by src/async_fifo.v, which needs a
++    -- reset the megafunction did not have: silicon powers up unknown. Driven
++    -- from sys_rst_n, the audio-domain reset. See notes/fifo.md.
+     component async_fifo is
+         port (
++            rst_n   : in  std_logic;
+             data    : in  std_logic_vector(7 downto 0);
+             rdclk   : in  std_logic;
+             rdreq   : in  std_logic;
+@@ -1432,6 +1436,7 @@
+     );
+ 
+     u_fifo : async_fifo port map (
++        rst_n   => sys_rst_n,
+         data    => fifo_wr_data_int,
+         rdclk   => rmii_ref_clk,
+         rdreq   => fifo_rd_en_int,

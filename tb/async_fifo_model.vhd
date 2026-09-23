@@ -9,6 +9,9 @@ use ieee.numeric_std.all;
 
 entity async_fifo is
     port (
+        -- Default '1' so the unpatched reference top, whose component has no
+        -- rst_n, still binds; the patched top drives it from sys_rst_n.
+        rst_n   : in  std_logic := '1';
         data    : in  std_logic_vector(7 downto 0);
         rdclk   : in  std_logic;
         rdreq   : in  std_logic;
@@ -27,9 +30,11 @@ architecture sim of async_fifo is
     signal rptr  : unsigned(10 downto 0) := (others => '0');
     signal q_r   : std_logic_vector(7 downto 0) := (others => '0');
 begin
-    process (wrclk)
+    process (wrclk, rst_n)
     begin
-        if rising_edge(wrclk) then
+        if rst_n = '0' then
+            wptr <= (others => '0');
+        elsif rising_edge(wrclk) then
             if wrreq = '1' and (wptr - rptr) /= 1024 then
                 mem(to_integer(wptr(9 downto 0))) <= data;
                 wptr <= wptr + 1;
@@ -37,9 +42,12 @@ begin
         end if;
     end process;
 
-    process (rdclk)
+    process (rdclk, rst_n)
     begin
-        if rising_edge(rdclk) then
+        if rst_n = '0' then
+            rptr <= (others => '0');
+            q_r  <= (others => '0');
+        elsif rising_edge(rdclk) then
             if rdreq = '1' and wptr /= rptr then
                 q_r  <= mem(to_integer(rptr(9 downto 0)));
                 rptr <= rptr + 1;

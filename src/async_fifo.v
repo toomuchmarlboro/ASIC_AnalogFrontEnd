@@ -1,5 +1,5 @@
-// Dual-clock FIFO, replacing the Altera dcfifo megafunction (ip/async_fifo).
-// See notes/fifo.md.
+// Dual-clock FIFO, replacing the vendor dcfifo megafunction (ip/async_fifo in
+// the FPGA project). Written here, not converted: see notes/fifo.md.
 //
 // Port names and behaviour follow the megafunction so the top-level port map
 // carries over: standard (not show-ahead) read, q registered and updated on the

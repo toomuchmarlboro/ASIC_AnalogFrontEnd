@@ -38,6 +38,18 @@ CTS clustering tightened; what each change bought and what it cost is in
 consequence carries forward: converted modules take an active-low `rst_n`
 ([notes/decisions.md](notes/decisions.md)).
 
+Phase 1 is done: the PLL is gone, the Altera FIFO is replaced by a 512 x 8
+Gray-pointer FIFO of our own, and the three `inout` ports are split. The three
+changes live as patches against the vendored FPGA VHDL, each verified against
+the original by simulation.
+
+Phase 2 is done: `src/` now holds the whole chip as generated Verilog-2005,
+converted from the VHDL in one `ghdl --synth` pass so the top's generic values
+are applied. It synthesises on its own to 637 096 cells and 4.21 mm² on
+sky130, with no vendor references, and 10 of the 12 checkable modules are
+**formally proven** equivalent to the VHDL they came from. The decimator is
+about 95 % of the area. Details in [notes/conversion.md](notes/conversion.md).
+
 Phases 1 through 5, and the deadlines, are in [WORKFLOW.md](WORKFLOW.md).
 
 ## Running things

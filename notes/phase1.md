@@ -1,7 +1,7 @@
 # Phase 1 — remove the vendor IP
 
-Status: **1a, 1b and 1c done and verified. The decimator is kept; its
-place-and-route feasibility run is in progress.** Date: 2026-09-19.
+Status: **complete. 1a, 1b and 1c done and verified. The decimator is kept and
+its back-end feasibility is measured, see below.** Date: 2026-09-19.
 
 Source read: `UATR_TDM` cloned to `~/UATR_TDM`, HEAD
 `c1fc108c68fad7cef11b884a3e889c5dd4281cc6`, byte-identical to `legacy/rtl` and
@@ -66,7 +66,7 @@ inferred RAM on the FPGA. The ASIC has no third-party SRAM macro to use (rule
 seeing the 3.99 mm² figure). So the work is to prove it can get through the
 flow, and the options below are kept only as the fallback record.
 
-### Feasibility run, in progress
+### Feasibility run — result
 
 Decimator alone, GHDL-converted, `SYNTH_STRATEGY "AREA 3"`, 40 ns, 35 %
 utilisation, `nice 19`, 4-hour limit, to detailed routing. Scratchpad
@@ -76,13 +76,20 @@ utilisation, `nice 19`, 4-hour limit, to detailed routing. Scratchpad
 | --- | --- |
 | Synthesis | **7 min 9 s** (AREA 0 was still in ABC at 30 min). 596 236 cells, **5.43 mm²** synthesised cell area |
 | Floorplan | die **15.64 mm²**, core 15.50 mm², about 3.95 mm square |
-| Global placement | running at the time of writing, 4.5 GB resident |
+| Placement, CTS, global route | completed |
+| Detailed routing | reached; stopped by a 4-hour limit part way through, 18.7 GB peak |
 
 `AREA 3` is OpenLane's ORFS-derived area script (`strash; dch; map -B 0.9`),
 much lighter than `AREA 0`'s `mfs`/`retime`/`&nf` sequence. 5.43 mm² is more
-than the 3.99 mm² quick synthesis because of cell sizing (`dfxtp_2` and
-buffers) the quick run did not do. Results go to [runs.md](runs.md) when the
-run ends.
+than the 3.99 mm² quick synthesis because of cell sizing the quick run did not
+do. Full record: [runs.md](runs.md), run `decflow`.
+
+**What it means for the schedule.** The block gets through every stage up to
+and including the start of detailed routing with no special handling, so
+nothing about it is structurally impossible. But it needs more than 4 hours and
+about 19 GB on this server, and the whole chip is bigger than this block. The
+8 October full-stack gate should be planned around a run measured in hours, not
+minutes, and the machine should be quiet while it runs.
 
 Options, kept as the fallback record:
 

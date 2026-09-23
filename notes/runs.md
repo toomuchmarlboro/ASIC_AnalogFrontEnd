@@ -162,3 +162,36 @@ overrides). Reproduces `hm0_s8d50` exactly: same instance count, area, slacks.
 | Gate-level check | both netlists pass all six cases, see [phase0.md](phase0.md) |
 
 Numbers: [results.md](results.md).
+
+## decflow — 2026-09-19/20 — decimator alone, place-and-route feasibility
+
+Not a design run. The question was whether a block of this size can get through
+the back end on this server at all, after the owner chose to keep the decimator
+([phase1.md](phase1.md)).
+
+| | |
+| --- | --- |
+| Command | `olrun "cd <scratch> && nice -n 19 timeout 14400 openlane --to OpenROAD.DetailedRouting --run-tag decflow cfg_decflow.json"` |
+| Input | `decimator` alone, GHDL-converted, `SYNTH_STRATEGY "AREA 3"`, 40 ns, `FP_CORE_UTIL` 35 |
+| Outcome | **Stopped by the 4-hour limit inside detailed routing.** Everything before it completed |
+
+| Stage | Result |
+| --- | --- |
+| Synthesis (`AREA 3`) | 7 min 9 s, 596 236 cells, 5.43 mm² cell area. `AREA 0` was still in ABC after 30 min and was abandoned |
+| Floorplan | die 15.64 mm², core 15.50 mm², about 3.95 mm square |
+| Placement, CTS, global route | all completed |
+| Detailed routing | reached, ran 18 min of wall time on its first pass, 136 825 violations still open at the cut-off, 38.5 mm of wire placed |
+| Peak memory | **18.7 GB** |
+
+Read carefully: the violation count is from an early routing iteration, where a
+high number is normal - detailed routing reduces it over successive passes. It
+is **not** evidence that the block cannot route. What the run does establish:
+
+- the decimator gets through synthesis, floorplan, placement, CTS and global
+  routing without special handling,
+- it needs **more than 4 hours** and **about 19 GB** on this machine, and the
+  whole chip is larger,
+- `AREA 3` is the only synthesis strategy measured to finish on it.
+
+Next time it needs a longer limit and a quiet machine. The server has 46 GB, so
+memory is not yet the binding constraint; wall time is.
